@@ -1,64 +1,155 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+ # Laravel Backend Setup for API Development
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Overview
+This section outlines the steps to set up a Laravel API that provides JWT-based authentication and endpoints for managing customers and products.
 
-## About Laravel
+## Prerequisites
+- Ensure you have PHP and Composer installed on your system.
+- Set up a MySQL database and note down the database credentials.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Step-by-Step Guide
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 1. Create a New Laravel Project
+Run the following command in your terminal to create a new Laravel project:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```bash
+composer create-project --prefer-dist laravel/laravel your-project-name
 
-## Learning Laravel
+```
+### Configure DataBase Connection
+- Open the .env file located in the root of your Laravel project and update the following lines with your MySQL database - credentials:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+```bash 
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database_name
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+```
+### Create Database Migrations
+- Run the following commands to create the necessary migrations for the users, products, and customers tables:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
 
-## Laravel Sponsors
+php artisan make:migration create_users_table --create=users
+php artisan make:migration create_products_table --create=products
+php artisan make:migration create_customers_table --create=customers
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+### Define Migration Structure
+- Edit the migration files located in the database/migrations directory and define the necessary fields for each table:
 
-### Premium Partners
+- Users Table Migration:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+```bash
+Schema::create('users', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('email')->unique();
+    $table->string('password');
+    $table->timestamps();
+});
+```
+- Products Table Migration:
 
-## Contributing
+```bash
+Schema::create('products', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->text('description');
+    $table->decimal('price', 8, 2);
+    $table->timestamps();
+});
+```
+- Customers Table Migration:
+```bash
+Schema::create('customers', function (Blueprint $table) {
+    $table->id();
+    $table->string('name');
+    $table->string('email')->unique();
+    $table->string('phone_number');
+    $table->timestamps();
+});
+```
+### Run Migrations
+- Execute the migrations to create the tables in your MySQL database:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan migrate
+```
+### Install JWT Authentication Package
+- Install the tymon/jwt-auth package for JWT authentication:
 
-## Code of Conduct
+```bash
+composer require tymon/jwt-auth
+```
+- After installation, publish the package configuration:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan vendor:publish --provider="Tymon\JWTAuth\JWTServiceProvider"
+```
+- Then generate the JWT secret key:
 
-## Security Vulnerabilities
+```bash
+php artisan jwt:secret
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Implement Authentication Logic
+- Create a controller for authentication:
 
-## License
+```bash
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+php artisan make:controller AuthController
+```
+- In the AuthController, implement the login method:
+
+```bash
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Auth;
+
+public function login(Request $request)
+{
+    $credentials = $request->only('email', 'password');
+    if (!$token = JWTAuth::attempt($credentials)) {
+        return response()->json(['error' => 'invalid_credentials'], 401);
+    }
+    return response()->json(compact('token'));
+}
+```
+
+### Define API Routes
+- Open the routes/api.php file and define the necessary routes:
+
+```bash
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:api')->group(function () {
+    Route::get('/customers', [CustomerController::class, 'index']);
+});
+Route::get('/products', [ProductController::class, 'index']);
+```
+
+### Create Controllers for Products and Customers
+- Generate controllers for handling products and customers:
+
+```bash
+
+php artisan make:controller ProductController
+php artisan make:controller CustomerController
+```
+- In each controller, implement the index methods to return data from the database.
+
+### Test Your API
+- You can use tools like Postman or Insomnia to test your API endpoints:
+```bash
+Login: POST /api/login with email and password to receive a JWT.
+Products: GET /api/products to retrieve the list of products.
+Customers: GET /api/customers to retrieve the list of customers (requires JWT in headers).
+```
+### Conclusion
+- This guide provides a concise overview of the steps required to set up a Laravel backend with JWT authentication and  necessary API endpoints. Ensure that your application follows best practices for security and code quality throughout -development.
+
+ 
+
+
+
